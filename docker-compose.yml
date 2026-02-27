@@ -130,12 +130,17 @@ services:
 
   # ---------------------------------------------------------------------------
   # Konga - Kong Admin GUI
+  # Note: Using built-in SQLite for local development
   # ---------------------------------------------------------------------------
   konga:
     container_name: konga
     image: pantsel/konga:latest
+    platform: linux/amd64  # Required for Apple Silicon (uses Rosetta)
     environment:
-      <<: *konga-env
+      NODE_ENV: development
+      TOKEN_SECRET: ${KONGA_TOKEN_SECRET:-your-secret-token-change-in-production}
+      noDBAdapter: "true"
+      KONGA_HOOK_TIMEOUT: 120000
     networks:
       - kong-net
     ports:
@@ -152,8 +157,6 @@ services:
       start_period: 60s
     restart: on-failure:5
     depends_on:
-      kong-database:
-        condition: service_healthy
       kong:
         condition: service_healthy
     volumes:
