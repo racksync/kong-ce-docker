@@ -25,7 +25,7 @@ claude_history.json
 
 # SpecKit / Specify
 .specify/
-.specify/
+specs/
 
 # Cursor AI
 .cursor/
