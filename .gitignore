@@ -1,30 +1,180 @@
+# =============================================================================
+# Project-Specific Ignores
+# =============================================================================
+
 # Environment files (contain secrets)
 .env
 *.env.local
+.env.local.*
 
 # Backup files
 backups/
 *.sql
 *.sql.gz
 
+# =============================================================================
+# AI Tools & Assistants (DO NOT COMMIT)
+# =============================================================================
+
+# Claude / Anthropic
+.claude/
+CLAUDE.md
+claude.md
+.claude_history
+claude_history.json
+
+# SpecKit / Specify
+.specify/
+.specify/
+
+# Cursor AI
+.cursor/
+.cursorrules
+.cursorignore
+
+# GitHub Copilot
+.github/copilot/
+copilot-instructions.md
+
+# Other AI Tools
+.aider*
+.augment/
+.codebuddy/
+.codex/
+.copilot/
+.cursor/
+.gemini/
+.kilocode/
+.opencode/
+.q/
+.qoder/
+.roo/
+.shai/
+.windsurf/
+agy.md
+amp.md
+bob.md
+codebuddy.md
+cursor-agent.md
+gemini.md
+opencode.md
+qwen.md
+windsurf.md
+
+# AI Memory/Context files
+memory/
+.agents/
+.agent/
+
+# =============================================================================
+# IDE & Editors
+# =============================================================================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (IntelliJ, WebStorm, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*.swn
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# =============================================================================
+# Operating System
+# =============================================================================
+
 # macOS
 .DS_Store
 **/.DS_Store
+.AppleDouble
+.LSOverride
+._*
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# =============================================================================
+# Docker
+# =============================================================================
+
+# Docker volumes (if using local bind mounts)
+docker-volumes/
+volumes/
+
+# Docker compose override (user-specific)
+docker-compose.override.yml
+
+# =============================================================================
+# Logs & Temporary Files
+# =============================================================================
 
 # Logs
 *.log
 logs/
+*.log.*
 
 # Temporary files
 *.tmp
+*.temp
 *.bak
 *.backup
+*.cache
 
-# Docker volumes (if using local bind mounts)
-docker-volumes/
+# =============================================================================
+# Build & Dependencies (if applicable)
+# =============================================================================
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Rust
+target/
+Cargo.lock
