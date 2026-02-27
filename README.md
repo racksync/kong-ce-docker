@@ -7,7 +7,7 @@ Kong CE (Community Edition) API Gateway with Konga web GUI - deployed with Docke
 This deployment provides a complete API gateway solution with:
 - **Kong CE 3.9+**: High-performance API gateway with plugin ecosystem
 - **Konga**: Web-based GUI for Kong administration
-- **PostgreSQL 16**: Persistent storage for both Kong and Konga
+- **PostgreSQL 16**: Persistent storage for Kong configuration
 
 ### Features
 
@@ -20,6 +20,7 @@ This deployment provides a complete API gateway solution with:
 | 🔌 Plugin System | Extend functionality with 80+ plugins |
 | ⚖️ Load Balancing | Distribute traffic across upstream services |
 | 🏥 Health Checks | Monitor upstream service health |
+| 🍎 Apple Silicon | Native support for M1/M2/M3 Macs |
 
 ## Architecture
 
@@ -48,16 +49,18 @@ This deployment provides a complete API gateway solution with:
     │  │ :8444 (HTTPS)       │    │ (Admin Dashboard)   │                     │
     │  └──────────┬──────────┘    └──────────┬──────────┘                     │
     │             │                          │                                │
-    │             └────────────┬─────────────┘                                │
-    │                          ▼                                              │
-    │  ┌───────────────────────────────────────────────────────────────────┐  │
-    │  │                    PostgreSQL 16                                   │  │
-    │  │  ┌─────────────────┐         ┌─────────────────┐                  │  │
-    │  │  │ DB: kong        │         │ DB: konga       │                  │  │
-    │  │  │ (Routes, Svcs,  │         │ (Users, Conns,  │                  │  │
-    │  │  │  Plugins, etc) │         │  Dashboards)    │                  │  │
-    │  │  └─────────────────┘         └─────────────────┘                  │  │
-    │  └───────────────────────────────────────────────────────────────────┘  │
+    │             ▼                          │                                │
+    │  ┌─────────────────────────┐           │                                │
+    │  │   PostgreSQL 16         │           │                                │
+    │  │   DB: kong              │           │                                │
+    │  │   (Routes, Services,    │           │                                │
+    │  │    Plugins, etc.)      │           │                                │
+    │  └─────────────────────────┘           ▼                                │
+    │                             ┌─────────────────────┐                     │
+    │                             │ Konga localDB       │                     │
+    │                             │ (SQLite - embedded) │                     │
+    │                             │ (Users, Connections)│                     │
+    │                             └─────────────────────┘                     │
     │                                                                          │
     └───────────────────────────────────┬──────────────────────────────────────┘
                                         │
@@ -69,43 +72,7 @@ This deployment provides a complete API gateway solution with:
     │                       │ │                       │ │                       │
     │  🌐 Web Application   │ │  📱 Mobile API        │ │  🔌 External API      │
     │  http://webapp:3000   │ │  http://mobile-api:80 │ │  https://api.partner  │
-    │                       │ │                       │ │                       │
-    │  Example:             │ │  Example:             │ │  Example:             │
-    │  - Next.js/React      │ │  - Node.js/Express    │ │  - Payment Gateway    │
-    │  - Vue.js/Nuxt        │ │  - Python/FastAPI     │ │  - SMS Service        │
-    │  - Angular            │ │  - Go/Gin             │ │  - Email Service      │
     └───────────────────────┘ └───────────────────────┘ └───────────────────────┘
-```
-
-### Request Flow Example
-
-```
-Client Request                    Kong Gateway                      Upstream Service
-    │                                 │                                    │
-    │  GET /api/users                 │                                    │
-    │────────────────────────────────>│                                    │
-    │                                 │                                    │
-    │                     ┌───────────┴───────────┐                       │
-    │                     │ 1. Rate Limit Check   │                       │
-    │                     │ 2. JWT Validation     │                       │
-    │                     │ 3. Request Transform  │                       │
-    │                     │ 4. Route Matching     │                       │
-    │                     └───────────┬───────────┘                       │
-    │                                 │                                    │
-    │                                 │  GET /users                        │
-    │                                 │───────────────────────────────────>│
-    │                                 │                                    │
-    │                                 │         200 OK + User Data         │
-    │                                 │<───────────────────────────────────│
-    │                                 │                                    │
-    │                     ┌───────────┴───────────┐                       │
-    │                     │ 5. Response Transform │                       │
-    │                     │ 6. Response Logging   │                       │
-    │                     └───────────┬───────────┘                       │
-    │                                 │                                    │
-    │         200 OK + Response       │                                    │
-    │<────────────────────────────────│                                    │
-    │                                 │                                    │
 ```
 
 ## Quick Start
@@ -127,7 +94,7 @@ cp default.env .env
 ```
 
 The setup script will:
-1. Start PostgreSQL and create databases (kong, konga)
+1. Start PostgreSQL database
 2. Run Kong migrations
 3. Start Kong gateway
 4. Start Konga GUI
@@ -175,11 +142,10 @@ cp default.env .env
 | `KONG_PG_USER` | kong | Kong database user |
 | `KONG_PG_PASSWORD` | kong | Kong database password |
 | `KONG_PG_DATABASE` | kong | Kong database name |
-| `KONGA_DB_USER` | konga | Konga database user |
-| `KONGA_DB_PASSWORD` | konga | Konga database password |
-| `KONGA_DB_DATABASE` | konga | Konga database name |
 
 ⚠️ **Security Warning**: Change all default passwords before production deployment!
+
+> **Note**: Konga uses embedded SQLite (localDB) for its configuration storage, which is sufficient for development and single-instance deployments.
 
 ## Manual Deployment
 
@@ -217,7 +183,7 @@ docker compose up -d konga
 curl http://localhost:8001/status
 ```
 
-### Backup Databases
+### Backup Kong Database
 
 ```bash
 # Create timestamped backup
@@ -226,11 +192,11 @@ curl http://localhost:8001/status
 # Backups saved to ./backups/
 ```
 
-### Restore Databases
+### Restore Kong Database
 
 ```bash
 # Restore from backup
-./restore.sh backups/kong_20260227_120000.sql --konga backups/konga_20260227_120000.sql
+./restore.sh backups/kong_20260227_120000.sql
 ```
 
 ### Upgrade Kong Version
@@ -239,13 +205,6 @@ curl http://localhost:8001/status
 # Upgrade to new version (with automatic backup)
 ./upgrade.sh 3.10
 ```
-
-The upgrade script:
-1. Creates a backup
-2. Updates the version in `.env`
-3. Runs `kong migrations up`
-4. Runs `kong migrations finish`
-5. Restarts Kong
 
 ### Stop Services
 
@@ -278,6 +237,16 @@ When configuring Kong connections in Konga:
 - **Inside Docker network**: Use `http://kong:8001`
 - **From host machine**: Use `http://localhost:8001`
 
+## Apple Silicon (M1/M2/M3) Support
+
+This deployment fully supports Apple Silicon Macs:
+
+- **Kong**: Native ARM64 images available ✅
+- **PostgreSQL**: Native ARM64 images available ✅
+- **Konga**: Uses Rosetta 2 emulation (configured automatically) ✅
+
+No additional configuration needed - just run `./setup.sh`!
+
 ## Troubleshooting
 
 ### Container won't start
@@ -307,6 +276,14 @@ docker exec kong-database pg_isready -U kong
 1. Verify Kong is running: `curl http://localhost:8001/status`
 2. In Konga, use the internal Docker URL: `http://kong:8001`
 3. Check network: `docker network inspect kong_kong-net`
+
+### Reset Konga (forgot password)
+
+```bash
+# Stop and remove Konga data, then restart
+docker compose down konga && docker volume rm kong_konga_data
+docker compose up -d konga
+```
 
 ### Port already in use
 
