@@ -1,182 +1,312 @@
-# 📢 DISCONTINUED! This place is no longer in operation because a newer and better option is now available. Please visit [kong-gateway-docker](https://github.com/racksync/kong-gateway-docker)
+# 🐳 Kong CE + Konga Docker Deployment
 
-## 🐳 Kong Docker deployment
----
-
-Kong API Gateway deployment with docker and docker-compose - The most popular open-source API Gateway built for multi-cloud and hybrid architectures.
+Kong CE (Community Edition) API Gateway with Konga web GUI - deployed with Docker Compose and PostgreSQL.
 
 ## Overview
 
-Kong serves as a scalable, open-source API Gateway that sits in front of your services. It offers powerful features including:
+This deployment provides a complete API gateway solution with:
+- **Kong CE 3.9+**: High-performance API gateway with plugin ecosystem
+- **Konga**: Web-based GUI for Kong administration
+- **PostgreSQL 16**: Persistent storage for both Kong and Konga
 
-- Authentication
-- Rate Limiting
-- Traffic Control
-- Analytics
-- Plugin Extensibility
-- Load Balancing
-- Health Checks
-- API Transformations
+### Features
 
-![Kong Docker Setup](./screenshot.png)
-*Kong Docker deployment architecture overview*
+| Feature | Description |
+|---------|-------------|
+| 🔐 Authentication | JWT, Key Auth, OAuth2, and more |
+| 📊 Rate Limiting | Control API usage and prevent abuse |
+| 🔄 Traffic Control | Canary releases, request/response transformations |
+| 📈 Analytics | Request logging and monitoring |
+| 🔌 Plugin System | Extend functionality with 80+ plugins |
+| ⚖️ Load Balancing | Distribute traffic across upstream services |
+| 🏥 Health Checks | Monitor upstream service health |
 
-## Status
-
-This deployment is production ready.
-
-## Change default value
-
-Copy `default.env` to `.env`
+## Architecture
 
 ```
-cp default.env .env
+                    ┌─────────────────────────────────────┐
+                    │          External Access             │
+                    └─────────────────┬───────────────────┘
+                                      │
+    ┌─────────────────────────────────┼─────────────────────────────────┐
+    │                                  │                                 │
+    │  ┌─────────────────┐    ┌─────────────────┐    ┌──────────────┐   │
+    │  │ Kong Proxy      │    │ Kong Admin API  │    │ Konga GUI    │   │
+    │  │ :8000 (HTTP)    │    │ :8001 (HTTP)    │    │ :1337        │   │
+    │  │ :8443 (HTTPS)   │    │ :8444 (HTTPS)   │    │              │   │
+    │  └────────┬────────┘    └────────┬────────┘    └──────┬───────┘   │
+    │           │                      │                     │           │
+    │           │                      │     ┌───────────────┘           │
+    │           │                      │     │                           │
+    │           ▼                      ▼     ▼                           │
+    │  ┌─────────────────────────────────────────────────────────────┐  │
+    │  │                    kong-net (Docker Network)                │  │
+    │  │                                                             │  │
+    │  │  ┌───────────────────────────────────────────────────────┐  │  │
+    │  │  │                 PostgreSQL 16                          │  │  │
+    │  │  │  ┌─────────────┐         ┌─────────────┐              │  │  │
+    │  │  │  │ DB: kong    │         │ DB: konga   │              │  │  │
+    │  │  │  │ (Kong cfg)  │         │ (Konga cfg) │              │  │  │
+    │  │  │  └─────────────┘         └─────────────┘              │  │  │
+    │  │  └───────────────────────────────────────────────────────┘  │  │
+    │  └─────────────────────────────────────────────────────────────┘  │
+    │                                                                     │
+    └─────────────────────────────────────────────────────────────────────┘
 ```
 
-then edit the `.env` file to change default values.
+## Quick Start
 
-| Variable name | Default value |
-|---------------|---------------|
-| `POSTGRES_VERSION`    | 14-alpine |
-| `POSTGRES_USER`       | kong |
-| `POSTGRES_PASSWORD`   | kong |
-| `POSTGRES_DB`         | kong |
-| `KONG_ADMIN_LISTEN`   | 0.0.0.0:8001 |
-| `KONG_PROXY_LISTEN`   | 0.0.0.0:8000, 0.0.0.0:8443 ssl http2 |
-| `KONG_PG_HOST`        | kong-database |
-| `KONG_PG_PASSWORD`    | kong == `env POSTGRES_PASSWORD` |
-| `COMPOSE_PROJECT_NAME`| kong |
-| `KONG_DATABASE`       | postgres |
-| `KONG_CASSANDRA_CONTACT_POINTS` | kong-database |
-| `KONG_ADMIN_GUI_LISTEN` | 0.0.0.0:8002 |
-| `KONG_ADMIN_GUI_URL` | http://localhost:8002 |
+### Prerequisites
 
-## Deploy Kong
+- Docker 20.x+
+- Docker Compose 2.x+
+- Ports available: 8000, 8001, 8002, 8443, 8444, 5432, 1337
 
-### Quick Setup
+### Deploy
 
 ```bash
+# 1. Copy environment file
+cp default.env .env
+
+# 2. Run setup script
 ./setup.sh
 ```
 
-This will execute all the necessary steps (database setup, migrations, and Kong startup) automatically.
+The setup script will:
+1. Start PostgreSQL and create databases (kong, konga)
+2. Run Kong migrations
+3. Start Kong gateway
+4. Start Konga GUI
 
-### Manual Deployment Steps
+### Access Services
 
-If you prefer to run each step manually:
+| Service | URL | Purpose |
+|---------|-----|---------|
+| Kong Proxy | http://localhost:8000 | API proxy endpoint |
+| Kong Admin API | http://localhost:8001 | REST API for configuration |
+| Konga GUI | http://localhost:1337 | Web management interface |
 
-### Deploy kong-database
+### First-Time Konga Setup
 
-```
-docker-compose up -d kong-database
-```
+1. Open http://localhost:1337
+2. Create an admin account
+3. Add a new Kong connection:
+   - **Name**: `local-kong`
+   - **Kong Admin URL**: `http://kong:8001` (use internal Docker network)
+4. Start managing your APIs through the GUI!
 
-### Run kong-database migrations
+## Configuration
 
-```
-docker-compose run --rm kong-migrations
-```
+### Environment Variables
 
-### Start Kong
+Copy `default.env` to `.env` and customize:
 
-```
-docker-compose up -d kong
-```
-
-**Now Kong is running**
-
-- Kong Admin API http://127.0.0.1:8001
-- Kong Manager http://127.0.0.1:8002
-- Kong Proxy http://127.0.0.1:8000
-
-### Explanation of Dependency Flow
-- `kong-database` is foundational because both `kong-migrations` and `kong` rely on the database to function.
-- `kong-migrations` ensures the database is initialized and ready for use by Kong.
-- `kong` is the last to start, as it requires the database and migrations to be fully prepared.
-
-By setting `depends_on`, Docker Compose handles these dependencies automatically, starting the containers in the correct order as long as all services are defined in the same file and executed using `docker-compose up`. However, note that `depends_on` only checks if a container starts, not if it is fully ready, so the health checks ensure readiness.
-
-## Architecture Overview
-
-Kong Gateway consists of several key components:
-
-1. **Kong Gateway**: The core proxy server that handles API requests
-2. **PostgreSQL Database**: Stores Kong's configuration data
-3. **Kong Manager**: Web GUI for administrative tasks
-4. **Kong Admin API**: RESTful interface for configuration
-
-## Security Considerations
-
-- Change default passwords in production
-- Use SSL/TLS for all external connections
-- Implement proper network segmentation
-- Regular security updates and patches
-- Access control for Kong Manager and Admin API
-
-### Upgrading Kong version
-
-> **WARNING** : This may take some downtime to start a new Kong version.
-
-1. Change `KONG_VERSION` in `.env` file to a newer version.
-
-	> If running kong version 2.2 change to 2.3 (or 2.3.0). [Suggested upgrade path](https://github.com/Kong/kong/blob/master/UPGRADE.md)
-
-2. Run migrations upgrade
-
-	```
-	docker-compose run --rm kong kong migrations up --vv
-	```
-
-3. Confirm finish migrations upgrade
-
-	```
-	docker-compose run --rm kong kong migrations finish --vv
-	```
-	
-4. Start new Kong version
-
-	```
-	docker-compose up -d kong
-	```
-
-## Monitoring & Maintenance
-
-### Health Checks
-
-Monitor Kong's health using the health endpoint:
 ```bash
+cp default.env .env
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| **Kong Configuration** |||
+| `KONG_VERSION` | 3.9 | Kong CE version |
+| `KONG_PROXY_HTTP_PORT` | 8000 | Kong HTTP proxy port |
+| `KONG_PROXY_HTTPS_PORT` | 8443 | Kong HTTPS proxy port |
+| `KONG_ADMIN_HTTP_PORT` | 8001 | Kong Admin HTTP port |
+| `KONG_ADMIN_HTTPS_PORT` | 8444 | Kong Admin HTTPS port |
+| **Konga Configuration** |||
+| `KONGA_PORT` | 1337 | Konga web UI port |
+| `KONGA_TOKEN_SECRET` | *change-me* | Session secret (generate with `openssl rand -hex 32`) |
+| **Database Configuration** |||
+| `POSTGRES_VERSION` | 16-alpine | PostgreSQL version |
+| `KONG_PG_USER` | kong | Kong database user |
+| `KONG_PG_PASSWORD` | kong | Kong database password |
+| `KONG_PG_DATABASE` | kong | Kong database name |
+| `KONGA_DB_USER` | konga | Konga database user |
+| `KONGA_DB_PASSWORD` | konga | Konga database password |
+| `KONGA_DB_DATABASE` | konga | Konga database name |
+
+⚠️ **Security Warning**: Change all default passwords before production deployment!
+
+## Manual Deployment
+
+If you prefer step-by-step deployment:
+
+```bash
+# 1. Start database
+docker compose up -d kong-database
+
+# 2. Wait for database to be healthy
+while ! docker compose ps kong-database | grep -q "(healthy)"; do sleep 2; done
+
+# 3. Run migrations
+docker compose run --rm kong-migrations
+
+# 4. Start Kong
+docker compose up -d kong
+
+# 5. Wait for Kong to be healthy
+while ! docker compose ps kong | grep -q "(healthy)"; do sleep 2; done
+
+# 6. Start Konga
+docker compose up -d konga
+```
+
+## Operations
+
+### Health Check
+
+```bash
+# Check all services
+./scripts/health-check.sh
+
+# Or manually
 curl http://localhost:8001/status
 ```
 
-### Backup & Recovery
+### Backup Databases
 
-Regular database backups are recommended:
 ```bash
-docker exec kong-database pg_dump -U kong kong > kong_backup.sql
+# Create timestamped backup
+./backup.sh
+
+# Backups saved to ./backups/
 ```
 
-### 📚 Automation Training
+### Restore Databases
 
-- [สินค้าและบริการ](http://racksync.com)
-- [เทรนนิ่งคอร์ส](https://facebook.com/racksync)
+```bash
+# Restore from backup
+./restore.sh backups/kong_20260227_120000.sql --konga backups/konga_20260227_120000.sql
+```
 
-### 👥 Community
+### Upgrade Kong Version
 
-- [Home Automation Thailand](https://www.facebook.com/groups/hathailand)
-- [Home Automation Marketplace](https://www.facebook.com/groups/hatmarketplace)
-- [Home Automation Thailand Discord](https://discord.gg/Wc5CwnWkp4)
+```bash
+# Upgrade to new version (with automatic backup)
+./upgrade.sh 3.10
+```
+
+The upgrade script:
+1. Creates a backup
+2. Updates the version in `.env`
+3. Runs `kong migrations up`
+4. Runs `kong migrations finish`
+5. Restarts Kong
+
+### Stop Services
+
+```bash
+# Stop all services
+docker compose down
+
+# Stop and remove all data (WARNING: destructive)
+docker compose down -v
+```
+
+## Using Konga
+
+### Creating Services and Routes via GUI
+
+1. In Konga, navigate to **Services** → **Add Service**
+2. Enter service details:
+   - **Name**: `my-api`
+   - **Host**: `api.example.com`
+   - **Port**: `443`
+   - **Protocol**: `https`
+3. Add a route to the service:
+   - **Paths**: `/api`
+   - **Methods**: `GET, POST`
+4. Test the route: `curl http://localhost:8000/api`
+
+### Connection URL Notes
+
+When configuring Kong connections in Konga:
+- **Inside Docker network**: Use `http://kong:8001`
+- **From host machine**: Use `http://localhost:8001`
+
+## Troubleshooting
+
+### Container won't start
+
+```bash
+# Check container logs
+docker compose logs kong
+docker compose logs konga
+docker compose logs kong-database
+
+# Check container status
+docker compose ps
+```
+
+### Database connection issues
+
+```bash
+# Verify database is running
+docker compose ps kong-database
+
+# Test database connectivity
+docker exec kong-database pg_isready -U kong
+```
+
+### Konga can't connect to Kong
+
+1. Verify Kong is running: `curl http://localhost:8001/status`
+2. In Konga, use the internal Docker URL: `http://kong:8001`
+3. Check network: `docker network inspect kong_kong-net`
+
+### Port already in use
+
+```bash
+# Find what's using the port
+lsof -i :8000
+
+# Either stop the conflicting service or change port in .env
+```
+
+## Security Considerations
+
+For production deployments:
+
+- ✅ Change all default passwords in `.env`
+- ✅ Use HTTPS for all external connections
+- ✅ Implement network segmentation (don't expose database port)
+- ✅ Apply Kong security plugins (rate limiting, IP restriction)
+- ✅ Enable authentication on Konga
+- ✅ Regular security updates
+- ✅ Restrict access to Admin API (port 8001)
+
+## Files Structure
+
+```
+kong-docker/
+├── docker-compose.yml      # Main orchestration
+├── default.env             # Default environment variables
+├── setup.sh                # Automated setup script
+├── backup.sh               # Database backup script
+├── restore.sh              # Database restore script
+├── upgrade.sh              # Kong upgrade script
+├── scripts/
+│   ├── health-check.sh     # Health verification
+│   ├── wait-for.sh         # Service readiness helper
+│   └── init-databases.sh   # PostgreSQL init script
+├── config/
+│   └── kong.yaml           # Optional declarative config
+└── backups/                # Backup storage (created on first backup)
+```
+
+## Documentation
+
+- [Kong Documentation](https://docs.konghq.com/gateway/latest/)
+- [Konga GitHub](https://github.com/pantsel/konga)
+- [Kong Plugin Hub](https://docs.konghq.com/hub/)
 
 ## 🏢 [RACKSYNC CO., LTD.](https://racksync.com)
 
-RACKSYNC Co., Ltd. specializes in automation and smart solutions of all scales. We are experts in designing, implementing, and monitoring sophisticated automation systems. Our team of specialists provides comprehensive consulting services and technical implementation for both residential and commercial projects. Beyond automation, we offer full-cycle Software as a Service (SaaS) development, helping businesses transform their operations through custom digital solutions. With our deep expertise in IoT, home automation, and enterprise systems, we deliver reliable and innovative solutions tailored to each client's unique requirements.
+RACKSYNC Co., Ltd. specializes in automation and smart solutions. We provide comprehensive consulting and implementation services for API gateways, microservices architecture, and enterprise integrations.
 
-📍 RACKSYNC COMPANY LIMITED    
-🌏 Suratthani, Thailand 84000   
-📧 Email : devops@racksync.com   
-📞 Tel : +66 85 880 8885   
+📍 Suratthani, Thailand 84000
+📧 Email: devops@racksync.com
+📞 Tel: +66 85 880 8885
 
-[![Home Automation Thailand Discord](https://img.shields.io/discord/986181205504438345?style=for-the-badge)](https://discord.gg/Wc5CwnWkp4) [![Github](https://img.shields.io/github/followers/racksync?style=for-the-badge)](https://github.com/racksync) 
-[![WebsiteStatus](https://img.shields.io/website?down_color=grey&down_message=Offline&style=for-the-badge&up_color=green&up_message=Online&url=https%3A%2F%2Fracksync.com)](https://racksync.com)
-
-
-
+[![GitHub](https://img.shields.io/github/followers/racksync?style=for-the-badge)](https://github.com/racksync)
+[![Website](https://img.shields.io/website?down_color=grey&down_message=Offline&style=for-the-badge&up_color=green&up_message=Online&url=https%3A%2F%2Fracksync.com)](https://racksync.com)

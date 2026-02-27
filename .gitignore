@@ -1,2 +1,30 @@
+# Environment files (contain secrets)
+.env
+*.env.local
+
+# Backup files
+backups/
+*.sql
+*.sql.gz
+
+# macOS
 .DS_Store
 **/.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+
+# Docker volumes (if using local bind mounts)
+docker-volumes/

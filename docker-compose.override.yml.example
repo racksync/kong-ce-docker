@@ -1,0 +1,50 @@
+# =============================================================================
+# Docker Compose Override Example
+# =============================================================================
+# Copy this file to docker-compose.override.yml and customize for your needs
+# Docker Compose automatically merges this with docker-compose.yml
+# =============================================================================
+
+# Example: Expose additional ports for development
+# services:
+#   kong:
+#     ports:
+#       - "9000:9000"  # Additional debug port
+
+# Example: Override environment variables
+# services:
+#   konga:
+#     environment:
+#       NODE_ENV: development
+#       DEBUG: "konga:*"
+
+# Example: Add volume mounts for development
+# services:
+#   kong:
+#     volumes:
+#       - ./custom-plugins:/custom-plugins:ro
+
+# Example: Disable read-only filesystem for debugging
+# services:
+#   kong:
+#     read_only: false
+
+# Example: Add resource limits
+# services:
+#   kong:
+#     deploy:
+#       resources:
+#         limits:
+#           cpus: '2'
+#           memory: 2G
+#         reservations:
+#           cpus: '0.5'
+#           memory: 512M
+
+# Example: Don't expose database externally in production
+# services:
+#   kong-database:
+#     ports: []
+#     # Or bind to localhost only:
+#     # ports:
+#     #   - "127.0.0.1:5432:5432"
