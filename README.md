@@ -83,6 +83,15 @@ This deployment provides a complete API gateway solution with:
 - Docker Compose 2.x+
 - Ports available: 8000, 8001, 8002, 8443, 8444, 5432, 1337
 
+### Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Linux x86_64 | ✅ Fully Supported | Native AMD64 images |
+| Linux ARM64 | ✅ Fully Supported | Native ARM64 images |
+| macOS Intel | ✅ Fully Supported | Native AMD64 images |
+| macOS Apple Silicon (M1/M2/M3) | ✅ Supported | Konga uses Rosetta 2 |
+
 ### Deploy
 
 ```bash
@@ -237,15 +246,33 @@ When configuring Kong connections in Konga:
 - **Inside Docker network**: Use `http://kong:8001`
 - **From host machine**: Use `http://localhost:8001`
 
-## Apple Silicon (M1/M2/M3) Support
+## Platform Compatibility
 
-This deployment fully supports Apple Silicon Macs:
+### Linux
 
-- **Kong**: Native ARM64 images available ✅
-- **PostgreSQL**: Native ARM64 images available ✅
-- **Konga**: Uses Rosetta 2 emulation (configured automatically) ✅
+All scripts are written in POSIX-compliant bash and work on:
+- Ubuntu 20.04+ / Debian 11+
+- CentOS 8+ / RHEL 8+ / Rocky Linux 8+
+- Amazon Linux 2023
+- Alpine Linux
 
-No additional configuration needed - just run `./setup.sh`!
+```bash
+# Install Docker on Ubuntu/Debian
+sudo apt update && sudo apt install -y docker.io docker-compose-plugin
+
+# Run setup
+./setup.sh
+```
+
+### macOS (Apple Silicon M1/M2/M3)
+
+Konga uses Rosetta 2 emulation (configured automatically in docker-compose.yml):
+
+```bash
+# Ensure Rosetta 2 is enabled (Docker Desktop > Settings > General)
+# Then run normally
+./setup.sh
+```
 
 ## Troubleshooting
 
